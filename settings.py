@@ -20,6 +20,7 @@ class Settings:
     word_gap: int = 420
     auto_timing: bool = True
     send_key: str = "delete"
+    backspace_key: str = "backspace"
     target_ip: str = ""
     port: int = 7777
     auto_listen: bool = True
@@ -32,10 +33,8 @@ class Settings:
     theme_shade: str = "pure-black"
     minimize_to_tray_on_close: bool = True
     history: list = field(default_factory=list)
-    
-    # New Auto-Send Feature
     auto_send_enabled: bool = False
-    auto_send_delay: int = 3  # Seconds to wait after typing stops
+    auto_send_delay: int = 3
 
     def save(self):
         os.makedirs(SETTINGS_DIR, exist_ok=True)

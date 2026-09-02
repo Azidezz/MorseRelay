@@ -78,7 +78,7 @@ class TapModeController:
         self.word_gap = word_gap
         self._morse: str = ""
         self._current_letter: str = ""
-        self._key_down_time: Optional[float] = None  # None means key is currently UP
+        self._key_down_time: Optional[float] = None
         self._letter_timer: Optional[threading.Timer] = None
         self._word_timer: Optional[threading.Timer] = None
         self._active = False
@@ -105,41 +105,41 @@ class TapModeController:
         if self.on_morse_updated: self.on_morse_updated("")
 
     def on_key_down(self):
-        if not self._active: return
-        
-        # IDIOT-PROOFING: If the key is already down, do absolutely nothing.
-        # This prevents OS auto-repeat from breaking the duration timer.
-        if self._key_down_time is not None:
-            return
-            
+        if not self._active or self._key_down_time is not None: return
         self._key_down_time = time.monotonic()
         self._cancel_timers()
         if self.on_key_state: self.on_key_state(True)
 
     def on_key_up(self):
-        if not self._active: return
-        
-        # IDIOT-PROOFING: If the key wasn't pressed down, we can't release it.
-        if self._key_down_time is None:
-            return
-            
+        if not self._active or self._key_down_time is None: return
         duration_ms = (time.monotonic() - self._key_down_time) * 1000
-        self._key_down_time = None  # Mark key as physically released
-        
+        self._key_down_time = None
         if self.on_key_state: self.on_key_state(False)
 
-        # Determine dot or dash based purely on the threshold
-        if duration_ms < self.dot_threshold:
-            self._current_letter += "."
-        else:
-            self._current_letter += "-"
-            
+        if duration_ms < self.dot_threshold: self._current_letter += "."
+        else: self._current_letter += "-"
         self._notify()
 
-        # Start letter-gap timer to finalize the letter
         self._letter_timer = threading.Timer(self.letter_gap / 1000, self._on_letter_complete)
         self._letter_timer.daemon = True
         self._letter_timer.start()
+
+    def on_backspace(self):
+        if not self._active or self._key_down_time is not None: return
+        self._cancel_timers()
+        
+        if self._current_letter:
+            self._current_letter = self._current_letter[:-1]
+        elif self._morse:
+            m = self._morse.rstrip()
+            if m.endswith("/"):
+                m = m[:-1].rstrip()
+            else:
+                parts = m.split(" ")
+                parts = parts[:-1]
+                m = " ".join(parts)
+            self._morse = m
+        self._notify()
 
     def _on_letter_complete(self):
         if self._current_letter:
@@ -161,8 +161,7 @@ class TapModeController:
             self._notify()
 
     def _notify(self):
-        display = self.get_display_morse()
-        if self.on_morse_updated: self.on_morse_updated(display)
+        if self.on_morse_updated: self.on_morse_updated(self.get_display_morse())
 
     def get_display_morse(self) -> str:
         if self._current_letter:

@@ -1,9 +1,5 @@
 # main.py
-"""
-MorseRelay — Entry Point
-=========================
-A serene, dark-mode Morse code communication app for Windows.
-"""
+"""MorseRelay — Entry Point"""
 
 import sys
 import threading
@@ -18,7 +14,6 @@ from network import NetworkManager
 from keyboard_hook import KeyboardHookManager
 from dashboard import Dashboard
 
-
 def create_tray_icon_image() -> Image.Image:
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -26,32 +21,21 @@ def create_tray_icon_image() -> Image.Image:
     draw.rounded_rectangle([28, 27, 54, 35], radius=3, fill="white")
     return img
 
-
 class MorseRelayApp:
     def __init__(self):
         self.settings = Settings.load()
         self.settings.recompute_timing_from_wpm()
         self.theme = THEMES[self.settings.theme_shade]
 
-        self.audio = AudioEngine(
-            frequency=self.settings.frequency,
-            volume=self.settings.volume,
-            wpm=self.settings.wpm,
-        )
-        self.network = NetworkManager(
-            callsign=self.settings.callsign,
-            port=self.settings.port,
-        )
+        self.audio = AudioEngine(frequency=self.settings.frequency, volume=self.settings.volume, wpm=self.settings.wpm)
+        self.network = NetworkManager(callsign=self.settings.callsign, port=self.settings.port)
         
         self.kb = KeyboardHookManager()
-        self.kb.set_tap_key(self.settings.send_key)  # Uses the single unified tap key
+        self.kb.set_tap_key(self.settings.send_key)
+        self.kb.set_backspace_key(self.settings.backspace_key)
         self.kb.start()
 
-        self.tap = TapModeController(
-            dot_threshold=self.settings.dot_threshold,
-            letter_gap=self.settings.letter_gap,
-            word_gap=self.settings.word_gap,
-        )
+        self.tap = TapModeController(dot_threshold=self.settings.dot_threshold, letter_gap=self.settings.letter_gap, word_gap=self.settings.word_gap)
 
         self.dashboard: Dashboard | None = None
         self.tray_icon: pystray.Icon | None = None
@@ -63,8 +47,7 @@ class MorseRelayApp:
         self.dashboard.mainloop()
 
     def show_tray_notification(self, title: str, message: str):
-        if self.tray_icon:
-            self.tray_icon.notify(message, title)
+        if self.tray_icon: self.tray_icon.notify(message, title)
 
     def setup_tray(self):
         if self.tray_icon: return
@@ -101,7 +84,6 @@ class MorseRelayApp:
         if self.tray_icon: self.tray_icon.stop()
         if self.dashboard: self.dashboard.destroy()
         sys.exit(0)
-
 
 def main():
     ctk.set_appearance_mode("dark")
